@@ -9,12 +9,17 @@ import UIKit
 @available(iOS 13, *)
 public protocol CreditCardScannerViewControllerDelegate: AnyObject {
     /// Called user taps the cancel button. Comes with a default implementation for UIViewControllers.
+    ///  被用户点击取消按钮,带有一个UIViewControllers的默认实现.
     /// - Warning: The viewController does not auto-dismiss. You must dismiss the viewController
+    /// - 警告:这个viewController不会自动关闭.你必须关闭viewController.
     func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController)
     /// Called when an error is encountered
+    // 当遇到错误的时候会被调用
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError)
     /// Called when finished successfully
+    /// 成功完成时调用
     /// - Note: successful finish does not guarentee that all credit card info can be extracted
+    /// - 注意: 成功完成并不保证可以提取所有信用卡信息
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard)
 }
 
@@ -75,6 +80,8 @@ open class CreditCardScannerViewController: UIViewController {
         super.viewDidLoad()
         layoutSubviews()
         setupLabelsAndButtons()
+        
+        ///镜头采集 用户认证
         AVCaptureDevice.authorize { [weak self] authoriazed in
             // This is on the main thread.
             guard let strongSelf = self else {
@@ -137,6 +144,7 @@ private extension CreditCardScannerViewController {
         arrangedSubviews.forEach(bottomStackView.addArrangedSubview)
     }
 
+    ///UI 设置
     func setupLabelsAndButtons() {
         titleLabel.text = titleLabelText
         titleLabel.textAlignment = .center
@@ -154,8 +162,12 @@ private extension CreditCardScannerViewController {
 }
 
 @available(iOS 13, *)
+///
 extension CreditCardScannerViewController: CameraViewDelegate {
+    
+    ///拍摄然后开始解析
     internal func didCapture(image: CGImage) {
+        print("开始解析图片 开始解析图片 开始解析图片")
         analyzer.analyze(image: image)
     }
 
@@ -190,7 +202,9 @@ extension CreditCardScannerViewController: ImageAnalyzerProtocol {
 }
 
 @available(iOS 13, *)
+///镜头采集
 extension AVCaptureDevice {
+    ///用户授权
     static func authorize(authorizedHandler: @escaping ((Bool) -> Void)) {
         let mainThreadHandler: ((Bool) -> Void) = { isAuthorized in
             DispatchQueue.main.async {
@@ -201,7 +215,7 @@ extension AVCaptureDevice {
         switch authorizationStatus(for: .video) {
         case .authorized:
             mainThreadHandler(true)
-        case .notDetermined:
+        case .notDetermined://用户暂时没有做相关选着
             requestAccess(for: .video, completionHandler: { granted in
                 mainThreadHandler(granted)
 })

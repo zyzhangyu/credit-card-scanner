@@ -44,27 +44,35 @@ class ExampleResultViewController: UIViewController {
 }
 
 extension ExampleResultViewController: CreditCardScannerViewControllerDelegate {
+    
+    /// 隐藏掉 摄像头界面
     func creditCardScannerViewControllerDidCancel(_ viewController: CreditCardScannerViewController) {
         viewController.dismiss(animated: true, completion: nil)
         print("cancel")
     }
-
+ 
+    /// 如果失败  也隐藏
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didErrorWith error: CreditCardScannerError) {
         print(error.errorDescription ?? "")
         resultLabel.text = error.errorDescription
         viewController.dismiss(animated: true, completion: nil)
     }
 
+    ///信用卡扫描
     func creditCardScannerViewController(_ viewController: CreditCardScannerViewController, didFinishWith card: CreditCard) {
         viewController.dismiss(animated: true, completion: nil)
+        
+        ///数据
+//        var dateComponents = card.expireDate
+//        dateComponents?.calendar = Calendar.current
+//        let dateFormater = DateFormatter()
+//        dateFormater.dateStyle = .short
+//        let date = dateComponents?.date.flatMap(dateFormater.string)
+        
+        
+        print("最终返回的card",card)
 
-        var dateComponents = card.expireDate
-        dateComponents?.calendar = Calendar.current
-        let dateFormater = DateFormatter()
-        dateFormater.dateStyle = .short
-        let date = dateComponents?.date.flatMap(dateFormater.string)
-
-        let text = [card.number, date, card.name]
+        let text = [card.cardName, card.cardNation, card.cardAddress, card.cardNumber]
             .compactMap { $0 }
             .joined(separator: "\n")
         resultLabel.text = text

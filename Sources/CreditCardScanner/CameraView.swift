@@ -139,15 +139,19 @@ final class CameraView: UIView {
             self?.startSession()
         }
     }
-
+    
+    ///设置兴趣范围
     func setupRegionOfInterest() {
         guard regionOfInterest == nil else { return }
         /// Mask layer that covering area around camera view
+        /// 遮罩层，覆盖摄像机视图周围的区域。
+
         let backLayer = CALayer()
         backLayer.frame = bounds
         backLayer.backgroundColor = maskLayerColor.withAlphaComponent(maskLayerAlpha).cgColor
 
         //  culcurate cutoutted frame
+        //  精确的剪裁框架
         let cuttedWidth: CGFloat = bounds.width - 40.0
         let cuttedHeight: CGFloat = cuttedWidth * CreditCard.heightRatioAgainstWidth
 
@@ -160,15 +164,26 @@ final class CameraView: UIView {
                                 width: cuttedWidth,
                                 height: cuttedHeight)
 
+        
+        ///根据路径绘制的矢量图层
         let maskLayer = CAShapeLayer()
         let path = UIBezierPath(roundedRect: cuttedRect, cornerRadius: 10.0)
 
         path.append(UIBezierPath(rect: bounds))
         maskLayer.path = path.cgPath
-        maskLayer.fillRule = .evenOdd
+        
+        //        CA_EXTERN NSString *const kCAFillRuleNonZero    //非零
+        //        CA_EXTERN NSString *const kCAFillRuleEvenOdd    //齐偶
+        //        even-odd 奇偶判断规则，从任意一点出发 与边界交点个数为
+        //        奇数则表示在圆或者说图形内，如果为偶数表示在圆外或者说图形外  奇数时在圆内
+
+
+        maskLayer.fillRule = .evenOdd ///填充规则，默认非零法则，奇偶原则     EvenOdd奇偶
         backLayer.mask = maskLayer
         layer.addSublayer(backLayer)
 
+        
+        ///照相机的矩形框
         let strokeLayer = CAShapeLayer()
         strokeLayer.lineWidth = 3.0
         strokeLayer.strokeColor = creditCardFrameStrokeColor.cgColor
@@ -192,11 +207,18 @@ final class CameraView: UIView {
 }
 
 @available(iOS 13, *)
+///实时的获取摄像头的视频流，通过解析数据流，可以进行实时的业务处理
 extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    func captureOutput(_ output: AVCaptureOutput,
+                       didOutput sampleBuffer: CMSampleBuffer,
+                       from connection: AVCaptureConnection) {
+        
+        ///信号标
         semaphore.wait()
+        ///等一个信号
         defer { semaphore.signal() }
 
+        ///来一个像素缓冲
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             delegate?.didError(with: CreditCardScannerError(kind: .capture))
             delegate = nil
@@ -204,13 +226,17 @@ extension CameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
 
         var cgImage: CGImage?
+        ///搞一张照片出来
         VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &cgImage)
 
+        ///确定兴趣范围
         guard let regionOfInterest = regionOfInterest else {
             return
         }
-
+        
+        ///全部的图片信息
         guard let fullCameraImage = cgImage,
+              ///从整个图片里剪裁敢兴趣的图片信息
             let croppedImage = fullCameraImage.cropping(to: regionOfInterest) else {
             delegate?.didError(with: CreditCardScannerError(kind: .capture))
             delegate = nil
